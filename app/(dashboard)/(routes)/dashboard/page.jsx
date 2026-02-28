@@ -70,11 +70,33 @@ function CapTooltip({ active, payload, label, q0 = 50 }) {
 
 // ─── MAIN DASHBOARD ───────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [data,      setData]      = useState(null);
-  const [connected, setConnected] = useState(false);
-  const [error,     setError]     = useState(null);
-  const [animSoh,   setAnimSoh]   = useState(0);
+  const [data,         setData]         = useState(null);
+  const [connected,    setConnected]    = useState(false);
+  const [error,        setError]        = useState(null);
+  const [animSoh,      setAnimSoh]      = useState(0);
+  const [backendStatus, setBackendStatus] = useState("starting"); // "starting" | "ready" | "failed"
   const sourceRef = useRef(null);
+
+  // ── On mount: ping Next.js API route to start battery_api.py if not running ──
+  useEffect(() => {
+    async function startBackend() {
+      try {
+        setBackendStatus("starting");
+        const res = await fetch("/api/start-battery", { method: "POST" });
+        const json = await res.json();
+        if (res.ok) {
+          setBackendStatus("ready");
+        } else {
+          setBackendStatus("failed");
+          setError(`Backend failed to start: ${json.message ?? "unknown error"}`);
+        }
+      } catch (e) {
+        setBackendStatus("failed");
+        setError("Could not reach /api/start-battery — is Next.js running?");
+      }
+    }
+    startBackend();
+  }, []);
 
   const connect = useCallback(() => {
     if (sourceRef.current) sourceRef.current.close();
@@ -88,7 +110,12 @@ export default function Dashboard() {
     };
   }, []);
 
-  useEffect(() => { connect(); return () => sourceRef.current?.close(); }, [connect]);
+  // Only start the SSE stream once the backend is confirmed ready
+  useEffect(() => {
+    if (backendStatus !== "ready") return;
+    connect();
+    return () => sourceRef.current?.close();
+  }, [backendStatus, connect]);
 
   useEffect(() => {
     if (!data) return;
@@ -105,6 +132,63 @@ export default function Dashboard() {
   const hc = data ? healthColor(data.soh) : "#16a34a";
   const hl = data ? healthLabel(data.soh) : "—";
   const q0 = data?.q0 ?? 50;
+
+  // ── Backend starting splash ───────────────────────────────────────────────
+  if (backendStatus === "starting") {
+    return (
+      <div style={{
+        minHeight:"100vh", background:"#f0f4f8", display:"flex",
+        alignItems:"center", justifyContent:"center",
+        fontFamily:"'DM Mono','Courier New',monospace",
+      }}>
+        <div style={{ textAlign:"center" }}>
+          <div style={{ fontSize:36, marginBottom:16 }}>⚡</div>
+          <div style={{ fontSize:13, letterSpacing:3, color:"#64748b", marginBottom:8 }}>
+            STARTING BATTERY BACKEND
+          </div>
+          <div style={{ fontSize:10, color:"#94a3b8", letterSpacing:2 }}>
+            Launching battery_api.py · please wait…
+          </div>
+          <div style={{ marginTop:24, display:"flex", justifyContent:"center", gap:6 }}>
+            {[0,1,2].map(i => (
+              <div key={i} style={{
+                width:8, height:8, borderRadius:"50%", background:"#22c55e",
+                animation:`pulse 1.2s ease-in-out ${i*0.2}s infinite`,
+              }}/>
+            ))}
+          </div>
+          <style>{`@keyframes pulse{0%,100%{opacity:0.2}50%{opacity:1}}`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  if (backendStatus === "failed") {
+    return (
+      <div style={{
+        minHeight:"100vh", background:"#f0f4f8", display:"flex",
+        alignItems:"center", justifyContent:"center",
+        fontFamily:"'DM Mono','Courier New',monospace",
+      }}>
+        <div style={{ textAlign:"center", maxWidth:420 }}>
+          <div style={{ fontSize:36, marginBottom:16 }}>⚠️</div>
+          <div style={{ fontSize:13, letterSpacing:3, color:"#ef4444", marginBottom:12 }}>
+            BACKEND FAILED TO START
+          </div>
+          <div style={{ fontSize:11, color:"#64748b", marginBottom:20, lineHeight:1.7 }}>
+            {error ?? "battery_api.py could not be launched. Check that Python is installed and the battery-backend folder is in your project root."}
+          </div>
+          <button
+            onClick={() => { setBackendStatus("starting"); setError(null); }}
+            style={{
+              padding:"8px 20px", background:"#0f172a", color:"#fff", border:"none",
+              borderRadius:8, fontSize:11, cursor:"pointer", letterSpacing:2,
+            }}
+          >RETRY</button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Combined capacity chart data ──────────────────────────────────────────
   // Past: each entry has { day, q_pred, q_real }
