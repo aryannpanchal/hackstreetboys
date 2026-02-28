@@ -30,7 +30,7 @@ export async function POST() {
     }
 
     // Spawn python as a detached background process so it outlives this request
-    const child = spawn("python3", [BATTERY_SCRIPT], {
+    const child = spawn("python", [BATTERY_SCRIPT], {
       detached: true,
       stdio:    "ignore",   // don't pipe stdout/stderr into Next.js
       cwd:      path.dirname(BATTERY_SCRIPT),
