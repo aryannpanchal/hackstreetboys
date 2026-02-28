@@ -7,8 +7,8 @@ import { ClerkProvider } from "@clerk/nextjs"
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'AspectAI',
-  description: 'RGIT',
+  title: 'Volt Watch',
+  description: 'A comprehensive monitoring and analytics platform for your EV battery, providing real-time insights and performance metrics to help you optimize and scale with confidence.',
 }
 
 export default function RootLayout({
