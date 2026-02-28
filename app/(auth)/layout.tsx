@@ -320,7 +320,9 @@ function Wheel({ cx, cy }: { cx: number; cy: number }) {
         fill="transparent"
         animate={{ rotate: 360 }}
         transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
-        style={{ transformOrigin: `${cx}px ${cy}px` }}
+        style={{
+          transformOrigin: `${cx}px ${cy}px`,
+        } as React.CSSProperties}
       />
     </g>
   );
@@ -672,7 +674,7 @@ function BatteryParallaxCard() {
         >
           <motion.div
             className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_30%_20%,rgba(34,211,238,0.15),transparent_42%),radial-gradient(circle_at_70%_80%,rgba(59,130,246,0.12),transparent_45%)]"
-            style={{ opacity: glowOpacity }}
+            style={{ opacity: glowOpacity } as any}
           />
 
           <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
@@ -700,7 +702,7 @@ function BatteryParallaxCard() {
               <div className="relative h-full overflow-hidden rounded-lg bg-white/10">
                 <motion.div
                   className="absolute inset-y-0 left-0 w-full rounded-lg bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500"
-                  style={{ scaleX: fillScale, transformOrigin: "left center" }}
+                  style={{ scaleX: fillScale, originX: 0 }}
                 />
                 <div className="absolute inset-0 grid grid-cols-10 gap-1 p-1">
                   {Array.from({ length: 10 }).map((_, i) => (
